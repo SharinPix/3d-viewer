@@ -26,9 +26,6 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      # - name: Replace paths with commit number
-      #   run: npm run replace ${{ github.event.pull_request.head.sha }}
-
       - name: Install other dependencies
         run: npm install
 

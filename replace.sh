@@ -1,15 +1,6 @@
-# replace /wasm/ with commitnumber/wasm/ in all files in the current directory
+# replace /wasm/ with commitnumber/wasm/ in model-loader.ts
+sed -i 's/\/wasm\//\/commitnumber\/wasm\//g' src/model-loader.ts
 
-for file in *; do
-    if [ -f "$file" ]; then
-        sed -i 's/\/wasm\//\/'"$1"'\/wasm\//g' "$file"
-    fi
-done
+# replace style.css with commitnumber/style.css in index.html
+sed -i 's/style.css/commitnumber\/style.css/g' src/index.html
 
-# replace styles.css with commitnumber/styles.css in all files in the current directory
-
-for file in *; do
-    if [ -f "$file" ]; then
-        sed -i 's/styles.css/'"$1"'/styles.css/g' "$file"
-    fi
-done

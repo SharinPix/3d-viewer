@@ -7,7 +7,7 @@
     "start": "npm run downloadhdr && npm run copydeps && webpack serve",
     "build": "mkdir -p public && npm run copystylesheet && webpack && npm run downloadhdr && npm run copydeps",
     "copydeps": "mkdir -p public/wasm && cp -r node_modules/three-usdz-loader/external/* public/wasm",
-    "copystylesheet": "cp src/templates/style.css public",
+    "copystylesheet": "cp src/templates/styles.css public",
     "downloadhdr": "curl -L -o public/studio_country_hall_1k.hdr https://github.com/ponahoum/usdz-web-viewer/blob/master/public/studio_country_hall_1k.hdr?raw=true"
   },
   "keywords": [],

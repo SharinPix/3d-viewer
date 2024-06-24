@@ -32,6 +32,9 @@ jobs:
       - name: Build the app
         run: npm run build
 
+      - name: Replace paths with commit number
+        run: npm run replace ${{ github.event.pull_request.head.sha }}
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:

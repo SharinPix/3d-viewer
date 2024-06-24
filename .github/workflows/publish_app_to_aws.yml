@@ -45,7 +45,7 @@ jobs:
       - name: Save aws s3 deployment url for aws environment
         id: aws-deployment-url
         run: |
-          echo "s3_url=https://${{ secrets.AWS_BUCKET_NAME }}.s3.us-east-2.amazonaws.com/${{ github.event.pull_request.head.sha }}?file=${{ vars.TEST_3D_FILE }}" >> $GITHUB_OUTPUT
+          echo "s3_url=https://${{ secrets.AWS_BUCKET_NAME }}.s3.us-east-2.amazonaws.com/${{ github.event.pull_request.head.sha }}/index.html?file=${{ vars.TEST_3D_FILE }}" >> $GITHUB_OUTPUT
 
       - name: Comment deployed url to PR
         if: github.event_name == 'pull_request'

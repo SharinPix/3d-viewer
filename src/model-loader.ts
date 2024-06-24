@@ -20,7 +20,7 @@ export class ModelLoader {
   }
 
   async loadUSDZ(file: File, group: THREE.Group): Promise<USDZInstance> {
-    const loader = new USDZLoader("/wasm");
+    const loader = new USDZLoader("wasm");
     return loader.loadFile(file, group);
   }
 

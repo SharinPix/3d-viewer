@@ -1,0 +1,30 @@
+{
+  "name": "3d-viewer",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "npm run downloadhdr && npm run copydeps && webpack serve",
+    "build": "npm run downloadhdr && npm run copydeps && webpack",
+    "copydeps": " mkdir public/wasm && cp -r node_modules/three-usdz-loader/external/ public/wasm",
+    "downloadhdr": "curl -L -o public/studio_country_hall_1k.hdr https://github.com/ponahoum/usdz-web-viewer/blob/master/public/studio_country_hall_1k.hdr?raw=true"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "three": "^0.140.0",
+    "three-usdz-loader": "^1.0.7"
+  },
+  "devDependencies": {
+    "@types/three": "^0.140.0",
+    "css-loader": "^7.1.2",
+    "html-webpack-plugin": "^5.6.0",
+    "style-loader": "^4.0.0",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.5.2",
+    "webpack": "^5.92.1",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^5.0.4"
+  }
+}

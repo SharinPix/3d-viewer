@@ -14,6 +14,8 @@ export class Loader {
   private measurement: Measurements;
 
   constructor(container: HTMLElement, url: string) {
+    this.addLoading();
+
     this.scene = new THREE.Scene();
     this.setSceneAttributes();
     this.group = new THREE.Group();
@@ -47,6 +49,7 @@ export class Loader {
         animate();
         this.fitCamera();
       });
+      this.removeLoading();
     });
 
     container.appendChild(this.renderer.domElement);
@@ -159,6 +162,19 @@ export class Loader {
   cleanup() {
     if (this.animationId) {
       cancelAnimationFrame(this.animationId);
+    }
+  }
+
+  addLoading(): void {
+    const loadingModel = document.getElementById("loading");
+    if (loadingModel) loadingModel.style.display = "flex";
+  }
+
+  removeLoading(): void {
+    const loadingModel = document.getElementById("loading");
+    if (loadingModel) {
+      loadingModel.style.display = "none";
+      loadingModel.remove();
     }
   }
 }

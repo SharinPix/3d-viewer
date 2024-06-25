@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { Utils } from "./utils";
 
 export class Measurements {
   private raycaster: THREE.Raycaster;
@@ -56,13 +57,13 @@ export class Measurements {
 
   private calculateDistance() {
     if (this.points.length === 2) {
-      const res = {
-        x: this.round(Math.sqrt(this.points[0].x*this.points[0].x + this.points[1].x*this.points[1].x)),
-        y: this.round(Math.sqrt(this.points[0].y*this.points[0].y + this.points[1].y*this.points[1].y)),
-        z: this.round(Math.sqrt(this.points[0].z*this.points[0].z + this.points[1].z*this.points[1].z)),
-        d: this.round(this.points[0].distanceTo(this.points[1]))
+      const result = {
+        x: Utils.roundOff(Math.sqrt(this.points[0].x*this.points[0].x + this.points[1].x*this.points[1].x)),
+        y: Utils.roundOff(Math.sqrt(this.points[0].y*this.points[0].y + this.points[1].y*this.points[1].y)),
+        z: Utils.roundOff(Math.sqrt(this.points[0].z*this.points[0].z + this.points[1].z*this.points[1].z)),
+        d: Utils.roundOff(this.points[0].distanceTo(this.points[1]))
       }
-      this.updateMeasurementDisplay(`Distance = ${JSON.stringify(res)}`);
+      this.updateMeasurementDisplay(`Distance = ${JSON.stringify(result)}`);
     }
   }
 
@@ -70,10 +71,6 @@ export class Measurements {
     const geometry = new THREE.BufferGeometry().setFromPoints(this.points);
     this.line = new THREE.Line(geometry, new THREE.LineBasicMaterial({ color: 0xff0000 }));
     scene.add(this.line);
-  }
-
-  private round(x: any) {
-    return Math.round(x * 100)/100;
   }
 
   private updateMeasurementDisplay(text: string) {

@@ -27,3 +27,11 @@ button {
   right: 0;
   margin: 10px;
 }
+
+#measurementDiv {
+  padding: 10px;
+  margin: 5px;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+}

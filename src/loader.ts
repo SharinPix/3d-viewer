@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { ModelLoader } from "./model-loader";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader.js";
-import { Utils } from "./utils";
+import { Measurements } from "./measurements";
 
 export class Loader {
   private animationId: number | undefined;
@@ -11,6 +11,7 @@ export class Loader {
   private controls: OrbitControls;
   private scene: THREE.Scene;
   private group: THREE.Group;
+  private measurement: Measurements;
 
   constructor(container: HTMLElement, url: string) {
     this.addLoading();
@@ -52,10 +53,16 @@ export class Loader {
     });
 
     container.appendChild(this.renderer.domElement);
+    
+    this.measurement = new Measurements();
+    const measurementDiv = document.createElement("div");
+    measurementDiv.id = "measurementDiv";
+    container.appendChild(measurementDiv);
 
-    window.addEventListener("resize", this.onWindowResize, false);
-    window.addEventListener("beforeunload", this.cleanup);
-    window.addEventListener("unload", this.cleanup);
+    window.addEventListener("resize", this.onWindowResize.bind(this), false);
+    window.addEventListener("beforeunload", this.cleanup.bind(this));
+    window.addEventListener("unload", this.cleanup.bind(this));
+    container.addEventListener("click", this.onMouseClick.bind(this), false);
   }
 
   setSceneAttributes() {
@@ -68,7 +75,6 @@ export class Loader {
     this.camera.position.x = 0;
   }
 
-  // Reference: https://github.com/ponahoum/usdz-web-viewer/blob/a84e63e4c5c407192b836c21765d5cbdc85d03b0/src/components/Home.ts#L174
   fitCamera(fitOffset = 1.5): void {
     const size = new THREE.Vector3();
     const center = new THREE.Vector3();
@@ -141,6 +147,10 @@ export class Loader {
         }
       );
     });
+  }
+
+  onMouseClick(event: MouseEvent) {
+    this.measurement.placePoints(this.scene, this.group, this.camera, event);
   }
 
   onWindowResize() {

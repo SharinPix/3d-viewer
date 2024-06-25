@@ -64,3 +64,11 @@ body {
   left: 50%;
   transform: translate(-50%, -50%);
 }
+
+#measurementDiv {
+  padding: 10px;
+  margin: 5px;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+}

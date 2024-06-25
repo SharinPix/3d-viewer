@@ -13,4 +13,8 @@ export class Utils {
     if (signature === "504B34") return true;
     return false;
   }
+
+  static roundOff(x: number) {
+    return Math.round(x * 100)/100;
+  }
 }

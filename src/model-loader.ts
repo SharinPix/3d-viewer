@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { USDZLoader } from "three-usdz-loader";
 import { USDZInstance } from "three-usdz-loader/lib/USDZInstance";
+import { Utils } from "./utils";
 
 export class ModelLoader {
   constructor(
@@ -8,22 +9,19 @@ export class ModelLoader {
     group: THREE.Group,
     onLoad: (model: USDZInstance) => void
   ) {
-    const loadingModel = document.getElementById("loading-model");
-    if (!loadingModel) throw new Error("Loading model element not found");
-    loadingModel.style.display = "flex";
+    this.addLoading();
 
     this.createFileFromUrl(url)
       .then((file) => {
-        if (file.type !== "model/usdz")
-          throw new Error(`Unsupported model file type: ${file.type}`);
         this.loadUSDZ(file, group).then((model) => {
           onLoad(model);
-          loadingModel.style.display = "none";
-          loadingModel.remove();
+          this.removeLoading();
         });
       })
       .catch((error) => {
-        throw new Error(`Failed to load model: ${error}`);
+        const msg = `${error}`;
+        Utils.displayError(msg);
+        this.removeLoading();
       });
   }
 
@@ -34,11 +32,30 @@ export class ModelLoader {
 
   async createFileFromUrl(url: string): Promise<File> {
     const response = await fetch(url);
-    if (!response.ok)
-      throw new Error(`Failed to fetch model: ${response.statusText}`);
+    if (!response.ok) {
+      const msg = `Failed to fetch model: ${response.statusText}`;
+      throw new Error(msg);
+    }
 
     const arrayBuffer = await response.arrayBuffer();
+    if (!Utils.isValidUSDZ(arrayBuffer)) {
+      const msg = "Invalid model type.";
+      throw new Error(msg);
+    }
     const blob = new Blob([arrayBuffer], { type: "model/usdz" });
     return new File([blob], "model.usdz", { type: "model/usdz" });
+  }
+
+  addLoading(): void {
+    const loadingModel = document.getElementById("loading-model");
+    if (loadingModel) loadingModel.style.display = "flex";
+  }
+
+  removeLoading(): void {
+    const loadingModel = document.getElementById("loading-model");
+    if (loadingModel) {
+      loadingModel.style.display = "none";
+      loadingModel.remove();
+    }
   }
 }

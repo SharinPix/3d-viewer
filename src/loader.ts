@@ -44,7 +44,7 @@ export class Loader {
         this.controls.update();
         this.renderer.render(this.scene, this.camera);
       };
-      
+
       new ModelLoader(url, this.group, (model) => {
         animate();
         this.fitCamera();

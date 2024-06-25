@@ -16,9 +16,11 @@ export class ModelLoader {
       .then((file) => {
         if (file.type !== "model/usdz")
           throw new Error(`Unsupported model file type: ${file.type}`);
-        this.loadUSDZ(file, group).then(onLoad);
-        loadingModel.style.display = "none";
-        loadingModel.remove();
+        this.loadUSDZ(file, group).then((model) => {
+          onLoad(model);
+          loadingModel.style.display = "none";
+          loadingModel.remove();
+        });
       })
       .catch((error) => {
         throw new Error(`Failed to load model: ${error}`);

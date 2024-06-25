@@ -12,6 +12,10 @@ export class Loader {
   private group: THREE.Group;
 
   constructor(container: HTMLElement, url: string) {
+    const loading = document.getElementById("loading");
+    if (!loading) throw new Error("Loading element not found");
+    loading.style.display = "flex";
+
     this.scene = new THREE.Scene();
     this.setSceneAttributes();
     this.group = new THREE.Group();
@@ -40,11 +44,13 @@ export class Loader {
         this.controls.update();
         this.renderer.render(this.scene, this.camera);
       };
-
+      
       new ModelLoader(url, this.group, (model) => {
         animate();
         this.fitCamera();
       });
+      loading.style.display = "none";
+      loading.remove();
     });
 
     container.appendChild(this.renderer.domElement);

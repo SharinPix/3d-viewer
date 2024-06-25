@@ -8,11 +8,17 @@ export class ModelLoader {
     group: THREE.Group,
     onLoad: (model: USDZInstance) => void
   ) {
+    const loadingModel = document.getElementById("loading-model");
+    if (!loadingModel) throw new Error("Loading model element not found");
+    loadingModel.style.display = "flex";
+
     this.createFileFromUrl(url)
       .then((file) => {
         if (file.type !== "model/usdz")
           throw new Error(`Unsupported model file type: ${file.type}`);
         this.loadUSDZ(file, group).then(onLoad);
+        loadingModel.style.display = "none";
+        loadingModel.remove();
       })
       .catch((error) => {
         throw new Error(`Failed to load model: ${error}`);

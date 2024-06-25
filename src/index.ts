@@ -1,5 +1,6 @@
 import { Viewer } from "./viewer";
 import "./templates/styles.css";
+import { Utils } from "./utils";
 
 function getUrlParameter(name: string): string | null {
   const urlParams = new URLSearchParams(window.location.search);
@@ -11,5 +12,7 @@ const url = getUrlParameter("file");
 if (url) {
   new Viewer(url);
 } else {
-  throw new Error("No file parameter provided.");
+  const msg = "No file parameter provided.";
+  Utils.displayError(msg);
+  throw new Error(msg);
 }

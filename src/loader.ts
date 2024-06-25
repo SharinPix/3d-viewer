@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { ModelLoader } from "./model-loader";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader.js";
+import { Utils } from "./utils";
 
 export class Loader {
   private animationId: number | undefined;
@@ -12,6 +13,8 @@ export class Loader {
   private group: THREE.Group;
 
   constructor(container: HTMLElement, url: string) {
+    this.addLoading();
+
     this.scene = new THREE.Scene();
     this.setSceneAttributes();
     this.group = new THREE.Group();
@@ -45,6 +48,7 @@ export class Loader {
         animate();
         this.fitCamera();
       });
+      this.removeLoading();
     });
 
     container.appendChild(this.renderer.domElement);
@@ -148,6 +152,19 @@ export class Loader {
   cleanup() {
     if (this.animationId) {
       cancelAnimationFrame(this.animationId);
+    }
+  }
+
+  addLoading(): void {
+    const loadingModel = document.getElementById("loading");
+    if (loadingModel) loadingModel.style.display = "flex";
+  }
+
+  removeLoading(): void {
+    const loadingModel = document.getElementById("loading");
+    if (loadingModel) {
+      loadingModel.style.display = "none";
+      loadingModel.remove();
     }
   }
 }

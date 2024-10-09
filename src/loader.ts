@@ -54,7 +54,7 @@ export class Loader {
 
     container.appendChild(this.renderer.domElement);
     
-    this.measurement = new Measurements();
+    this.measurement = new Measurements(this.scene);
     const measurementDiv = document.createElement("div");
     measurementDiv.id = "measurementDiv";
     container.appendChild(measurementDiv);
@@ -150,7 +150,7 @@ export class Loader {
   }
 
   onMouseClick(event: MouseEvent) {
-    this.measurement.placePoints(this.scene, this.group, this.camera, event);
+    this.measurement.placePoints(this.group, this.camera, event);
   }
 
   onWindowResize() {

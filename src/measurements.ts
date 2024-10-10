@@ -24,7 +24,7 @@ export class Measurements {
   }
 
   public placePoints(group: THREE.Group, camera: THREE.Camera, event: MouseEvent) {
-    this.color = this.getRandomColor ? this.generateRandomColor() : this.color;
+    this.color = this.getRandomColor ? Utils.generateRandomColor() : this.color;
     this.getRandomColor = false;
 
     this.updateMouse(event);
@@ -85,10 +85,6 @@ export class Measurements {
     this.scene.add(line);
   }
 
-  private generateRandomColor() {
-    return `#${Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')}`;
-  }
-
   private resetPoints() {
     this.points = [];
     this.getRandomColor = true;
@@ -96,20 +92,27 @@ export class Measurements {
 
   private convertDistance(distanceInMeters: number, unit: string): number {
     switch (unit) {
-      case 'cm':
-        return distanceInMeters * 100;
+      case 'm':
+        return distanceInMeters;
       case 'inch':
         return distanceInMeters * 39.3701;
       case 'foot':
         return distanceInMeters * 3.28084;
-      case 'm':
+      case 'cm':
       default:
-        return distanceInMeters;
+        return distanceInMeters * 100;
     }
   }
 
   private updateMeasurementDisplay() {
-    const measurementContainer = document.querySelector("#table-body");
+    const measurementContainer = document.querySelector("#measurements");
+    const measurementTable = document.querySelector("#table") as HTMLTableElement;
+    if (this.lines.length === 0 && measurementTable) {
+      measurementTable.style.display = "none";
+      return;
+    } else {
+      measurementTable.style.display = "block";
+    }
     const unitSelect = document.getElementById("unit-select") as HTMLSelectElement;
     if (!measurementContainer || !unitSelect) return;
 
@@ -119,20 +122,17 @@ export class Measurements {
       const convertedDistance = this.convertDistance(distance, selectedUnit).toFixed(2);
       return `
         <tr>
-          <td><div style="width: 60px; height: 25px; background-color: ${this.colors[index]}; border: 1px solid black;"></div></td>
-          <td>${convertedDistance} ${selectedUnit}</td>
-          <td><button class="removeLine" data-index="${index}">Remove Line</button></td>
+          <td style="text-align: center; vertical-align: middle;">
+            <div style="width: 60px; height: 25px; background-color: ${this.colors[index]}; border: 1px solid black;"></div>
+          </td>
+          <td style="text-align: center; vertical-align: middle;">
+            ${convertedDistance} ${selectedUnit}
+          </td>
+          <td style="text-align: center; vertical-align: middle;">
+            <button class="removeLine" data-index="${index}">Remove Line</button>
+          </td>
         </tr>`;
     }).join("");
-
-    if (this.distances.length > 0) {
-      rows += `
-        <tr>
-          <td></td>
-          <td></td>
-          <td><button id="clearButton">Reset All</button></td>
-        </tr>`;
-    }
 
     measurementContainer.innerHTML = rows;
     this.addEventListeners();

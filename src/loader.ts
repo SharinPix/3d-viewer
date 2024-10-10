@@ -55,10 +55,6 @@ export class Loader {
     container.appendChild(this.renderer.domElement);
     
     this.measurement = new Measurements(this.scene);
-    const measurementTable = document.querySelector("#table") as HTMLTableElement;
-    if (measurementTable) {
-      measurementTable.style.display = "none";
-    }
     window.addEventListener("resize", this.onWindowResize.bind(this), false);
     window.addEventListener("beforeunload", this.cleanup.bind(this));
     window.addEventListener("unload", this.cleanup.bind(this));

@@ -7,6 +7,10 @@ interface SpherePair {
 }
 
 export class Measurements {
+  private readonly METERS_TO_INCHES = 39.3701;
+  private readonly METERS_TO_FEET = 3.28084;
+  private readonly METERS_TO_CM = 100;
+
   private raycaster = new THREE.Raycaster();
   private points: THREE.Vector3[] = [];
   private spheres: SpherePair[] = [];
@@ -17,15 +21,19 @@ export class Measurements {
   private scene: THREE.Scene;
   private colors: string[] = [];
   private color: string = "";
-  private getRandomColor: boolean = true;
+  private measurementTable: HTMLTableElement;
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
+
+    this.measurementTable = document.querySelector("#table") as HTMLTableElement;
+    if (this.measurementTable) {
+      this.measurementTable.style.display = "none";
+    }
   }
 
   public placePoints(group: THREE.Group, camera: THREE.Camera, event: MouseEvent) {
-    this.color = this.getRandomColor ? Utils.generateRandomColor() : this.color;
-    this.getRandomColor = false;
+    this.color = this.color ? this.color : Utils.generateRandomColor();
 
     this.updateMouse(event);
     this.raycaster.setFromCamera(this.mouse, camera);
@@ -36,7 +44,8 @@ export class Measurements {
       if (this.points.length === 2) {
         this.drawLine();
         this.calculateDistance();
-        this.resetPoints();
+        this.points = [];
+        this.color = "";
       }
     }
   }
@@ -85,38 +94,32 @@ export class Measurements {
     this.scene.add(line);
   }
 
-  private resetPoints() {
-    this.points = [];
-    this.getRandomColor = true;
-  }
-
   private convertDistance(distanceInMeters: number, unit: string): number {
     switch (unit) {
       case 'm':
         return distanceInMeters;
       case 'inch':
-        return distanceInMeters * 39.3701;
+        return distanceInMeters * this.METERS_TO_INCHES;
       case 'foot':
-        return distanceInMeters * 3.28084;
+        return distanceInMeters * this.METERS_TO_FEET;
       case 'cm':
       default:
-        return distanceInMeters * 100;
+        return distanceInMeters * this.METERS_TO_CM;
     }
   }
 
   private updateMeasurementDisplay() {
-    const measurementContainer = document.querySelector("#measurements");
-    const measurementTable = document.querySelector("#table") as HTMLTableElement;
-    if (this.lines.length === 0 && measurementTable) {
-      measurementTable.style.display = "none";
+    const measurementsContainer = document.querySelector("#measurements");
+    if (this.lines.length === 0 && this.measurementTable) {
+      this.measurementTable.style.display = "none";
       return;
     } else {
-      measurementTable.style.display = "block";
+      this.measurementTable.style.display = "block";
     }
-    const unitSelect = document.getElementById("unit-select") as HTMLSelectElement;
-    if (!measurementContainer || !unitSelect) return;
+    const unitDropdown = document.getElementById("unit-dropdown") as HTMLSelectElement;
+    if (!measurementsContainer || !unitDropdown) return;
 
-    const selectedUnit = unitSelect.value;
+    const selectedUnit = unitDropdown.value;
 
     let rows = this.distances.map((distance, index) => {
       const convertedDistance = this.convertDistance(distance, selectedUnit).toFixed(2);
@@ -134,7 +137,7 @@ export class Measurements {
         </tr>`;
     }).join("");
 
-    measurementContainer.innerHTML = rows;
+    measurementsContainer.innerHTML = rows;
     this.addEventListeners();
   }
 
@@ -142,7 +145,7 @@ export class Measurements {
     const clearButton = document.getElementById("clearButton");
     clearButton?.addEventListener("click", () => this.clearAll());
 
-    document.getElementById("unit-select")?.addEventListener("change", () => this.updateMeasurementDisplay());
+    document.getElementById("unit-dropdown")?.addEventListener("change", () => this.updateMeasurementDisplay());
 
     document.querySelectorAll(".removeLine").forEach((button) => {
       const index = parseInt((button as HTMLElement).dataset.index!, 10);

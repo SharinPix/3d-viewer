@@ -6,11 +6,11 @@ interface SpherePair {
   sphere2: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>;
 }
 
-export class Measurements {
-  private readonly METERS_TO_INCHES = 39.3701;
-  private readonly METERS_TO_FEET = 3.28084;
-  private readonly METERS_TO_CM = 100;
+const METERS_TO_INCHES = 39.3701;
+const METERS_TO_FEET = 3.28084;
+const METERS_TO_CM = 100;
 
+export class Measurements {
   private raycaster = new THREE.Raycaster();
   private points: THREE.Vector3[] = [];
   private spheres: SpherePair[] = [];
@@ -20,20 +20,20 @@ export class Measurements {
   private spheresForLine: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>[] = [];
   private scene: THREE.Scene;
   private colors: string[] = [];
-  private color: string = "";
+  private generatedColor: string | undefined = undefined;
   private measurementTable: HTMLTableElement;
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
 
-    this.measurementTable = document.querySelector("#table") as HTMLTableElement;
+    this.measurementTable = document.querySelector("#measurements-table-container") as HTMLTableElement;
     if (this.measurementTable) {
       this.measurementTable.style.display = "none";
     }
   }
 
   public placePoints(group: THREE.Group, camera: THREE.Camera, event: MouseEvent) {
-    this.color = this.color ? this.color : Utils.generateRandomColor();
+    this.generatedColor = this.generatedColor ? this.generatedColor : Utils.generateRandomColor();
 
     this.updateMouse(event);
     this.raycaster.setFromCamera(this.mouse, camera);
@@ -45,7 +45,7 @@ export class Measurements {
         this.drawLine();
         this.calculateDistance();
         this.points = [];
-        this.color = "";
+        this.generatedColor = undefined;
       }
     }
   }
@@ -71,7 +71,7 @@ export class Measurements {
   private createSphere(point: THREE.Vector3): THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial> {
     const sphere = new THREE.Mesh(
       new THREE.SphereGeometry(0.05, 32, 32),
-      new THREE.MeshBasicMaterial({ color: this.color })
+      new THREE.MeshBasicMaterial({ color: this.generatedColor })
     );
     sphere.position.copy(point);
     this.scene.add(sphere);
@@ -88,8 +88,10 @@ export class Measurements {
 
   private drawLine() {
     const geometry = new THREE.BufferGeometry().setFromPoints(this.points);
-    const line = new THREE.Line(geometry, new THREE.LineBasicMaterial({ color: this.color }));
-    this.colors.push(this.color);
+    const line = new THREE.Line(geometry, new THREE.LineBasicMaterial({ color: this.generatedColor }));
+    if (this.generatedColor) {
+      this.colors.push(this.generatedColor);
+    }
     this.lines.push(line);
     this.scene.add(line);
   }
@@ -99,12 +101,12 @@ export class Measurements {
       case 'm':
         return distanceInMeters;
       case 'inch':
-        return distanceInMeters * this.METERS_TO_INCHES;
+        return distanceInMeters * METERS_TO_INCHES;
       case 'foot':
-        return distanceInMeters * this.METERS_TO_FEET;
+        return distanceInMeters * METERS_TO_FEET;
       case 'cm':
       default:
-        return distanceInMeters * this.METERS_TO_CM;
+        return distanceInMeters * METERS_TO_CM;
     }
   }
 
@@ -160,15 +162,11 @@ export class Measurements {
     });
     this.lines.forEach(line => this.scene.remove(line));
 
-    this.resetMeasurements();
-    this.updateMeasurementDisplay();
-  }
-
-  private resetMeasurements() {
     this.spheres = [];
     this.distances = [];
     this.lines = [];
     this.colors = [];
+    this.updateMeasurementDisplay();
   }
 
   private removeLine(index: number) {

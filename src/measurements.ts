@@ -1,9 +1,14 @@
 import * as THREE from "three";
 import { Utils } from "./utils";
+import { DragControls } from 'three/examples/jsm/controls/DragControls';
+import { Loader } from "./loader";
 
 interface SpherePair {
   sphere1: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>;
   sphere2: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>;
+  line: THREE.Line<THREE.BufferGeometry, THREE.LineBasicMaterial>;
+  color: string;
+  distance: number;
 }
 
 const METERS_TO_INCHES = 39.3701;
@@ -13,36 +18,60 @@ const METERS_TO_CM = 100;
 export class Measurements {
   private raycaster = new THREE.Raycaster();
   private points: THREE.Vector3[] = [];
-  private spheres: SpherePair[] = [];
-  private lines: THREE.Line<THREE.BufferGeometry, THREE.LineBasicMaterial>[] = [];
+  private spherePairs: SpherePair[] = [];
   private mouse = new THREE.Vector2();
-  private distances: number[] = [];
-  private spheresForLine: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>[] = [];
   private scene: THREE.Scene;
-  private colors: string[] = [];
-  private generatedColor: string | undefined = undefined;
   private measurementTable: HTMLTableElement;
+  private control: DragControls;
+  private group: THREE.Group;
+  generatedColor: string | undefined = undefined;
 
-  constructor(scene: THREE.Scene) {
+  private currentSpheres: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>[] = [];
+
+  constructor(
+    scene: THREE.Scene,
+    camera: THREE.Camera,
+    renderer: THREE.WebGLRenderer,
+    group: THREE.Group,
+    loader: Loader
+  ) {
     this.scene = scene;
+    this.group = group;
 
     this.measurementTable = document.querySelector("#measurements-table-container") as HTMLTableElement;
     if (this.measurementTable) {
       this.measurementTable.style.display = "none";
     }
+
+    this.control = new DragControls([], camera, renderer.domElement);
+
+    this.control.addEventListener('dragstart', () => {
+      loader.lockRotationAndClick();
+    });
+
+    this.control.addEventListener('dragend', () => {
+      setTimeout(() => {
+        loader.unlockRotationAndClick();
+      }, 500);
+    });
+
+    this.control.addEventListener('drag', (event: any) => {
+      this.onSphereDrag(event.object as THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>);
+    });
   }
 
-  public placePoints(group: THREE.Group, camera: THREE.Camera, event: MouseEvent) {
-    this.generatedColor = this.generatedColor ? this.generatedColor : Utils.generateRandomColor();
+  public placePoints(camera: THREE.Camera, event: MouseEvent) {
+    if (!this.generatedColor) {
+      this.generatedColor = Utils.generateRandomColor();
+    }
 
     this.updateMouse(event);
     this.raycaster.setFromCamera(this.mouse, camera);
 
-    const intersects = this.raycaster.intersectObject(group, true);
+    const intersects = this.raycaster.intersectObject(this.group, true);
     if (intersects.length > 0) {
-      this.addPoint(intersects[0].point);
+      this.addPoint(intersects[0].point, this.generatedColor);
       if (this.points.length === 2) {
-        this.drawLine();
         this.calculateDistance();
         this.points = [];
         this.generatedColor = undefined;
@@ -57,43 +86,51 @@ export class Measurements {
     );
   }
 
-  private addPoint(point: THREE.Vector3) {
+  private addPoint(point: THREE.Vector3, color: string) {
     this.points.push(point);
-    const sphere = this.createSphere(point);
-    this.spheresForLine.push(sphere);
+    const sphere = this.createSphere(point, color);
+    this.control.getObjects().push(sphere);
+    this.currentSpheres.push(sphere);
 
-    if (this.spheresForLine.length === 2) {
-      this.spheres.push({ sphere1: this.spheresForLine[0], sphere2: this.spheresForLine[1] });
-      this.spheresForLine = [];
+    if (this.currentSpheres.length === 2) {
+      const [sphere1, sphere2] = this.currentSpheres;
+      const pair: SpherePair = {
+        sphere1,
+        sphere2,
+        line: new THREE.Line(
+          new THREE.BufferGeometry().setFromPoints([sphere1.position, sphere2.position]),
+          new THREE.LineBasicMaterial({ color })
+        ),
+        color,
+        distance: 0
+      };
+      this.scene.add(pair.line);
+      this.spherePairs.push(pair);
+      this.calculateDistanceForPair(pair);
+      this.updateMeasurementDisplay();
+      this.currentSpheres = [];
     }
   }
 
-  private createSphere(point: THREE.Vector3): THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial> {
+  private createSphere(point: THREE.Vector3, color: string): THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial> {
     const sphere = new THREE.Mesh(
       new THREE.SphereGeometry(0.05, 32, 32),
-      new THREE.MeshBasicMaterial({ color: this.generatedColor })
+      new THREE.MeshBasicMaterial({ color })
     );
     sphere.position.copy(point);
     this.scene.add(sphere);
     return sphere;
   }
 
-  private calculateDistance() {
-    if (this.points.length === 2) {
-      const distance = Utils.roundOff(this.points[0].distanceTo(this.points[1]));
-      this.distances.push(distance);
-      this.updateMeasurementDisplay();
-    }
+  private calculateDistanceForPair(pair: SpherePair) {
+    const distance = Utils.roundOff(pair.sphere1.position.distanceTo(pair.sphere2.position));
+    pair.distance = distance;
   }
 
-  private drawLine() {
-    const geometry = new THREE.BufferGeometry().setFromPoints(this.points);
-    const line = new THREE.Line(geometry, new THREE.LineBasicMaterial({ color: this.generatedColor }));
-    if (this.generatedColor) {
-      this.colors.push(this.generatedColor);
-    }
-    this.lines.push(line);
-    this.scene.add(line);
+  private calculateDistance() {
+    this.spherePairs.forEach(pair => {
+      this.calculateDistanceForPair(pair);
+    });
   }
 
   private convertDistance(distanceInMeters: number, unit: string): number {
@@ -111,8 +148,8 @@ export class Measurements {
   }
 
   private updateMeasurementDisplay() {
-    const measurementsContainer = document.querySelector("#measurements");
-    if (this.lines.length === 0 && this.measurementTable) {
+    const measurementsContainer = document.querySelector("#measurements") as HTMLElement;
+    if (this.spherePairs.length === 0 && this.measurementTable) {
       this.measurementTable.style.display = "none";
       return;
     } else {
@@ -123,12 +160,12 @@ export class Measurements {
 
     const selectedUnit = unitDropdown.value;
 
-    let rows = this.distances.map((distance, index) => {
-      const convertedDistance = this.convertDistance(distance, selectedUnit).toFixed(2);
+    let rows = this.spherePairs.map((pair, index) => {
+      const convertedDistance = this.convertDistance(pair.distance, selectedUnit).toFixed(2);
       return `
         <tr>
           <td style="text-align: center; vertical-align: middle;">
-            <div style="width: 60px; height: 25px; background-color: ${this.colors[index]}; border: 1px solid black;"></div>
+            <div style="width: 60px; height: 25px; background-color: ${pair.color}; border: 1px solid black;"></div>
           </td>
           <td style="text-align: center; vertical-align: middle;">
             ${convertedDistance} ${selectedUnit}
@@ -147,7 +184,8 @@ export class Measurements {
     const clearButton = document.getElementById("clearButton");
     clearButton?.addEventListener("click", () => this.clearAll());
 
-    document.getElementById("unit-dropdown")?.addEventListener("change", () => this.updateMeasurementDisplay());
+    const unitDropdown = document.getElementById("unit-dropdown") as HTMLSelectElement;
+    unitDropdown?.addEventListener("change", () => this.updateMeasurementDisplay());
 
     document.querySelectorAll(".removeLine").forEach((button) => {
       const index = parseInt((button as HTMLElement).dataset.index!, 10);
@@ -156,28 +194,36 @@ export class Measurements {
   }
 
   private clearAll() {
-    this.spheres.forEach(({ sphere1, sphere2 }) => {
-      this.scene.remove(sphere1);
-      this.scene.remove(sphere2);
+    this.spherePairs.forEach(pair => {
+      this.scene.remove(pair.sphere1);
+      this.scene.remove(pair.sphere2);
+      this.scene.remove(pair.line);
     });
-    this.lines.forEach(line => this.scene.remove(line));
-
-    this.spheres = [];
-    this.distances = [];
-    this.lines = [];
-    this.colors = [];
+    this.spherePairs = [];
     this.updateMeasurementDisplay();
   }
 
   private removeLine(index: number) {
-    this.scene.remove(this.lines[index]);
-    this.spheres[index].sphere1 && this.scene.remove(this.spheres[index].sphere1);
-    this.spheres[index].sphere2 && this.scene.remove(this.spheres[index].sphere2);
+    const pair = this.spherePairs[index];
+    if (pair) {
+      this.scene.remove(pair.line);
+      this.scene.remove(pair.sphere1);
+      this.scene.remove(pair.sphere2);
+      this.spherePairs.splice(index, 1);
+      this.updateMeasurementDisplay();
+    }
+  }
 
-    this.spheres.splice(index, 1);
-    this.lines.splice(index, 1);
-    this.colors.splice(index, 1);
-    this.distances.splice(index, 1);
+  private onSphereDrag(draggedSphere: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>) {
+    const pair = this.spherePairs.find(p => p.sphere1 === draggedSphere || p.sphere2 === draggedSphere);
+    if (!pair) return;
+
+    const positions = pair.line.geometry.attributes.position as THREE.BufferAttribute;
+    positions.setXYZ(0, pair.sphere1.position.x, pair.sphere1.position.y, pair.sphere1.position.z);
+    positions.setXYZ(1, pair.sphere2.position.x, pair.sphere2.position.y, pair.sphere2.position.z);
+    positions.needsUpdate = true;
+
+    this.calculateDistanceForPair(pair);
 
     this.updateMeasurementDisplay();
   }

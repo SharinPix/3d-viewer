@@ -21,14 +21,14 @@ export class Measurements {
   private scene: THREE.Scene;
   private colors: string[] = [];
   private generatedColor: string | undefined = undefined;
-  private measurementTable: HTMLTableElement;
+  private measurementsTable: HTMLTableElement;
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
 
-    this.measurementTable = document.querySelector("#measurements-table-container") as HTMLTableElement;
-    if (this.measurementTable) {
-      this.measurementTable.style.display = "none";
+    this.measurementsTable = document.querySelector("#measurements-table-container") as HTMLTableElement;
+    if (this.measurementsTable) {
+      this.measurementsTable.style.display = "none";
     }
   }
 
@@ -82,7 +82,7 @@ export class Measurements {
     if (this.points.length === 2) {
       const distance = Utils.roundOff(this.points[0].distanceTo(this.points[1]));
       this.distances.push(distance);
-      this.updateMeasurementDisplay();
+      this.updateMeasurementsDisplay();
     }
   }
 
@@ -110,25 +110,25 @@ export class Measurements {
     }
   }
 
-  private updateMeasurementDisplay() {
+  private updateMeasurementsDisplay() {
     const measurementsContainer = document.querySelector("#measurements");
-    if (this.lines.length === 0 && this.measurementTable) {
-      this.measurementTable.style.display = "none";
+    if (this.lines.length === 0 && this.measurementsTable) {
+      this.measurementsTable.style.display = "none";
       return;
     } else {
-      this.measurementTable.style.display = "block";
+      this.measurementsTable.style.display = "block";
     }
-    const unitDropdown = document.getElementById("unit-dropdown") as HTMLSelectElement;
-    if (!measurementsContainer || !unitDropdown) return;
+    const unitsDropdown = document.getElementById("units-dropdown") as HTMLSelectElement;
+    if (!measurementsContainer || !unitsDropdown) return;
 
-    const selectedUnit = unitDropdown.value;
+    const selectedUnit = unitsDropdown.value;
 
     let rows = this.distances.map((distance, index) => {
       const convertedDistance = this.convertDistance(distance, selectedUnit).toFixed(2);
       return `
         <tr>
           <td style="text-align: center; vertical-align: middle;">
-            <div style="width: 60px; height: 25px; background-color: ${this.colors[index]}; border: 1px solid black;"></div>
+            <div style="width: 60px; height: 25px; background-color: ${this.colors[index]}; border: 1px solid black; margin: 0 auto;"></div>
           </td>
           <td style="text-align: center; vertical-align: middle;">
             ${convertedDistance} ${selectedUnit}
@@ -147,7 +147,7 @@ export class Measurements {
     const clearButton = document.getElementById("clearButton");
     clearButton?.addEventListener("click", () => this.clearAll());
 
-    document.getElementById("unit-dropdown")?.addEventListener("change", () => this.updateMeasurementDisplay());
+    document.getElementById("units-dropdown")?.addEventListener("change", () => this.updateMeasurementsDisplay());
 
     document.querySelectorAll(".removeLine").forEach((button) => {
       const index = parseInt((button as HTMLElement).dataset.index!, 10);
@@ -166,7 +166,7 @@ export class Measurements {
     this.distances = [];
     this.lines = [];
     this.colors = [];
-    this.updateMeasurementDisplay();
+    this.updateMeasurementsDisplay();
   }
 
   private removeLine(index: number) {
@@ -179,6 +179,6 @@ export class Measurements {
     this.colors.splice(index, 1);
     this.distances.splice(index, 1);
 
-    this.updateMeasurementDisplay();
+    this.updateMeasurementsDisplay();
   }
 }

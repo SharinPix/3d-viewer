@@ -78,3 +78,13 @@ body {
   left: 0px;
   width: 30%;
 }
+
+table, td, th {
+  border: 1px solid;
+  padding: 10px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}

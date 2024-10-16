@@ -21,10 +21,11 @@ export class Measurements {
   private spherePairs: SpherePair[] = [];
   private mouse = new THREE.Vector2();
   private scene: THREE.Scene;
-  private measurementTable: HTMLTableElement;
   private control: DragControls;
   private group: THREE.Group;
-  generatedColor: string | undefined = undefined;
+  private colors: string[] = [];
+  private generatedColor: string | undefined = undefined;
+  private measurementsTable: HTMLTableElement;
 
   private currentSpheres: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>[] = [];
 
@@ -38,9 +39,9 @@ export class Measurements {
     this.scene = scene;
     this.group = group;
 
-    this.measurementTable = document.querySelector("#measurements-table-container") as HTMLTableElement;
-    if (this.measurementTable) {
-      this.measurementTable.style.display = "none";
+    this.measurementsTable = document.querySelector("#measurements-table-container") as HTMLTableElement;
+    if (this.measurementsTable) {
+      this.measurementsTable.style.display = "none";
     }
 
     this.control = new DragControls([], camera, renderer.domElement);
@@ -107,7 +108,7 @@ export class Measurements {
       this.scene.add(pair.line);
       this.spherePairs.push(pair);
       this.calculateDistanceForPair(pair);
-      this.updateMeasurementDisplay();
+      this.updateMeasurementsDisplay();
       this.currentSpheres = [];
     }
   }
@@ -147,25 +148,25 @@ export class Measurements {
     }
   }
 
-  private updateMeasurementDisplay() {
+  private updateMeasurementsDisplay() {
     const measurementsContainer = document.querySelector("#measurements") as HTMLElement;
-    if (this.spherePairs.length === 0 && this.measurementTable) {
-      this.measurementTable.style.display = "none";
+    if (this.spherePairs.length === 0 && this.measurementsTable) {
+      this.measurementsTable.style.display = "none";
       return;
     } else {
-      this.measurementTable.style.display = "block";
+      this.measurementsTable.style.display = "block";
     }
-    const unitDropdown = document.getElementById("unit-dropdown") as HTMLSelectElement;
-    if (!measurementsContainer || !unitDropdown) return;
+    const unitsDropdown = document.getElementById("units-dropdown") as HTMLSelectElement;
+    if (!measurementsContainer || !unitsDropdown) return;
 
-    const selectedUnit = unitDropdown.value;
+    const selectedUnit = unitsDropdown.value;
 
     let rows = this.spherePairs.map((pair, index) => {
       const convertedDistance = this.convertDistance(pair.distance, selectedUnit).toFixed(2);
       return `
         <tr>
           <td style="text-align: center; vertical-align: middle;">
-            <div style="width: 60px; height: 25px; background-color: ${pair.color}; border: 1px solid black;"></div>
+            <div style="width: 60px; height: 25px; background-color: ${pair.color}; border: 1px solid black; margin: 0 auto;"></div>
           </td>
           <td style="text-align: center; vertical-align: middle;">
             ${convertedDistance} ${selectedUnit}
@@ -185,7 +186,7 @@ export class Measurements {
     clearButton?.addEventListener("click", () => this.clearAll());
 
     const unitDropdown = document.getElementById("unit-dropdown") as HTMLSelectElement;
-    unitDropdown?.addEventListener("change", () => this.updateMeasurementDisplay());
+    unitDropdown?.addEventListener("change", () => this.updateMeasurementsDisplay());
 
     document.querySelectorAll(".removeLine").forEach((button) => {
       const index = parseInt((button as HTMLElement).dataset.index!, 10);
@@ -200,7 +201,7 @@ export class Measurements {
       this.scene.remove(pair.line);
     });
     this.spherePairs = [];
-    this.updateMeasurementDisplay();
+    this.updateMeasurementsDisplay();
   }
 
   private removeLine(index: number) {
@@ -210,7 +211,7 @@ export class Measurements {
       this.scene.remove(pair.sphere1);
       this.scene.remove(pair.sphere2);
       this.spherePairs.splice(index, 1);
-      this.updateMeasurementDisplay();
+      this.updateMeasurementsDisplay();
     }
   }
 
@@ -225,6 +226,6 @@ export class Measurements {
 
     this.calculateDistanceForPair(pair);
 
-    this.updateMeasurementDisplay();
+    this.updateMeasurementsDisplay();
   }
 }

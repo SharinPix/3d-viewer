@@ -58,11 +58,6 @@ body {
   transform: translate(-50%, -50%);
 }
 
-#loading-text {
-  position: absolute;
-  display: contents;
-}
-
 #error {
   position: absolute;
   top: 50%;
@@ -77,4 +72,14 @@ body {
   top: 0px;
   left: 0px;
   width: 30%;
+}
+
+table, td, th {
+  border: 1px solid;
+  padding: 10px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
 }

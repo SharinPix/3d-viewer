@@ -8,6 +8,26 @@
   </head>
   <body>
     <div id="viewer"></div>
+    <div id="measurements-table-container">
+      <table id="measurements-table" class="table table-hover table-bordered">
+        <thead>
+          <tr>
+            <th scope="col" style="text-align: center; vertical-align: middle;">Line</th>
+            <th scope="col" style="text-align: center; vertical-align: middle;">
+              Distance 
+              <select id="units-dropdown">
+                <option value="cm">cm</option>
+                <option value="m">m</option>
+                <option value="inch">inch</option>
+                <option value="foot">foot</option>
+              </select>
+            </th>
+            <th scope="col" style="text-align: center; vertical-align: middle;"><button id="clearButton">Remove All</button></th>
+          </tr>
+        </thead>
+        <tbody id="measurements"></tbody>
+      </table>
+    </div>
     <div id="loading">
       <div id="loader"></div>
       <p>Loading...</p>

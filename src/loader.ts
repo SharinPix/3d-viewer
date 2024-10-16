@@ -54,11 +54,7 @@ export class Loader {
 
     container.appendChild(this.renderer.domElement);
     
-    this.measurement = new Measurements();
-    const measurementDiv = document.createElement("div");
-    measurementDiv.id = "measurementDiv";
-    container.appendChild(measurementDiv);
-
+    this.measurement = new Measurements(this.scene);
     window.addEventListener("resize", this.onWindowResize.bind(this), false);
     window.addEventListener("beforeunload", this.cleanup.bind(this));
     window.addEventListener("unload", this.cleanup.bind(this));
@@ -150,7 +146,7 @@ export class Loader {
   }
 
   onMouseClick(event: MouseEvent) {
-    this.measurement.placePoints(this.scene, this.group, this.camera, event);
+    this.measurement.placePoints(this.group, this.camera, event);
   }
 
   onWindowResize() {

@@ -23,7 +23,6 @@ export class Measurements {
   private scene: THREE.Scene;
   private control: DragControls;
   private group: THREE.Group;
-  private colors: string[] = [];
   private generatedColor: string | undefined = undefined;
   private measurementsTable: HTMLTableElement;
 
@@ -199,6 +198,11 @@ export class Measurements {
       this.scene.remove(pair.sphere1);
       this.scene.remove(pair.sphere2);
       this.scene.remove(pair.line);
+      const objects = this.control.getObjects();
+      const index1 = objects.indexOf(pair.sphere1);
+      if (index1 > -1) objects.splice(index1, 1);
+      const index2 = objects.indexOf(pair.sphere2);
+      if (index2 > -1) objects.splice(index2, 1);
     });
     this.spherePairs = [];
     this.updateMeasurementsDisplay();
@@ -210,6 +214,11 @@ export class Measurements {
       this.scene.remove(pair.line);
       this.scene.remove(pair.sphere1);
       this.scene.remove(pair.sphere2);
+      const objects = this.control.getObjects();
+      const index1 = objects.indexOf(pair.sphere1);
+      if (index1 > -1) objects.splice(index1, 1);
+      const index2 = objects.indexOf(pair.sphere2);
+      if (index2 > -1) objects.splice(index2, 1);
       this.spherePairs.splice(index, 1);
       this.updateMeasurementsDisplay();
     }

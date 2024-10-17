@@ -17,7 +17,6 @@ const METERS_TO_CM = 100;
 
 export class Measurements {
   private raycaster = new THREE.Raycaster();
-  private points: THREE.Vector3[] = [];
   private spherePairs: SpherePair[] = [];
   private mouse = new THREE.Vector2();
   private scene: THREE.Scene;
@@ -71,11 +70,6 @@ export class Measurements {
     const intersects = this.raycaster.intersectObject(this.group, true);
     if (intersects.length > 0) {
       this.addPoint(intersects[0].point, this.generatedColor);
-      if (this.points.length === 2) {
-        this.calculateDistance();
-        this.points = [];
-        this.generatedColor = undefined;
-      }
     }
   }
 
@@ -87,7 +81,6 @@ export class Measurements {
   }
 
   private addPoint(point: THREE.Vector3, color: string) {
-    this.points.push(point);
     const sphere = this.createSphere(point, color);
     this.control.getObjects().push(sphere);
     this.currentSpheres.push(sphere);
@@ -109,6 +102,7 @@ export class Measurements {
       this.calculateDistanceForPair(pair);
       this.updateMeasurementsDisplay();
       this.currentSpheres = [];
+      this.generatedColor = undefined;
     }
   }
 
@@ -125,12 +119,6 @@ export class Measurements {
   private calculateDistanceForPair(pair: SpherePair) {
     const distance = Utils.roundOff(pair.sphere1.position.distanceTo(pair.sphere2.position));
     pair.distance = distance;
-  }
-
-  private calculateDistance() {
-    this.spherePairs.forEach(pair => {
-      this.calculateDistanceForPair(pair);
-    });
   }
 
   private convertDistance(distanceInMeters: number, unit: string): number {
@@ -194,6 +182,9 @@ export class Measurements {
   }
 
   private clearAll() {
+    this.currentSpheres.forEach(sphere => {
+      this.scene.remove(sphere);
+    })
     this.spherePairs.forEach(pair => {
       this.scene.remove(pair.sphere1);
       this.scene.remove(pair.sphere2);
@@ -205,6 +196,8 @@ export class Measurements {
       if (index2 > -1) objects.splice(index2, 1);
     });
     this.spherePairs = [];
+    this.currentSpheres = [];
+    this.generatedColor = undefined;
     this.updateMeasurementsDisplay();
   }
 

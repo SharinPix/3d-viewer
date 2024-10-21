@@ -227,7 +227,6 @@ export class Measurements {
     positions.needsUpdate = true;
 
     this.calculateDistanceForPair(pair);
-
     this.updateMeasurementsDisplay();
   }
 }

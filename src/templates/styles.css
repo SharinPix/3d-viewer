@@ -37,7 +37,6 @@ body {
 }
 
 #loading {
-  display: none;
   justify-content: center;
   align-items: center;
   gap: 10px;
@@ -48,7 +47,6 @@ body {
 }
 
 #loading-model {
-  display: none;
   justify-content: center;
   align-items: center;
   gap: 10px;
@@ -72,6 +70,10 @@ body {
   top: 0px;
   left: 0px;
   width: 30%;
+} 
+
+#measurements-table-container {
+  display: none;
 }
 
 table, td, th {

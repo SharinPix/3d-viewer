@@ -23,7 +23,9 @@ export class Measurements {
   private control: DragControls;
   private group: THREE.Group;
   private generatedColor: string | undefined = undefined;
-  private measurementsTable: HTMLTableElement;
+  private lastValidPosition: THREE.Vector3 | null = null;
+  private camera: THREE.Camera;
+  private onMouseDown: (mouseEvent: MouseEvent) => void;
 
   private currentSpheres: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>[] = [];
 
@@ -36,19 +38,28 @@ export class Measurements {
   ) {
     this.scene = scene;
     this.group = group;
-
-    this.measurementsTable = document.querySelector("#measurements-table-container") as HTMLTableElement;
-    if (this.measurementsTable) {
-      this.measurementsTable.style.display = "none";
-    }
+    this.camera = camera;
 
     this.control = new DragControls([], camera, renderer.domElement);
+    
+    this.onMouseDown = (mouseEvent: MouseEvent) => {
+      this.updateMouse(mouseEvent);
+    };
 
-    this.control.addEventListener('dragstart', () => {
+    this.control.addEventListener('dragstart', (event: any) => {
+      window.addEventListener('mousedown', this.onMouseDown);
       loader.lockRotationAndClick();
+      this.lastValidPosition = event.object.position.clone();
     });
 
-    this.control.addEventListener('dragend', () => {
+    this.control.addEventListener('dragend', (event: any) => {
+      const onMouseUp = (mouseEvent: MouseEvent) => {
+        this.updateMouse(mouseEvent);
+        this.onSphereDragEnd(event.object as THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>, event);
+        window.removeEventListener("mouseup", onMouseUp);
+        window.removeEventListener("mousedown", this.onMouseDown);
+      };
+      window.addEventListener('mouseup', onMouseUp);
       setTimeout(() => {
         loader.unlockRotationAndClick();
       }, 500);
@@ -137,11 +148,19 @@ export class Measurements {
 
   private updateMeasurementsDisplay() {
     const measurementsContainer = document.querySelector("#measurements") as HTMLElement;
-    if (this.spherePairs.length === 0 && this.measurementsTable) {
-      this.measurementsTable.style.display = "none";
+    const measurementsTableContainer = document.querySelector("#measurements-table-container") as HTMLElement;
+    
+    if (this.spherePairs.length === 0 && measurementsTableContainer) {
+      measurementsTableContainer.style.display = "none";
+      this.currentSpheres.forEach(sphere => {
+        this.scene.remove(sphere);
+      })
+      this.spherePairs = [];
+      this.currentSpheres = [];
+      this.generatedColor = undefined;
       return;
     } else {
-      this.measurementsTable.style.display = "block";
+      measurementsTableContainer.style.display = "block";
     }
     const unitsDropdown = document.getElementById("units-dropdown") as HTMLSelectElement;
     if (!measurementsContainer || !unitsDropdown) return;
@@ -228,5 +247,39 @@ export class Measurements {
 
     this.calculateDistanceForPair(pair);
     this.updateMeasurementsDisplay();
+  }
+
+  private onSphereDragEnd(draggedSphere: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>, event: any) {
+    const pair = this.spherePairs.find(p => p.sphere1 === draggedSphere || p.sphere2 === draggedSphere);
+    if (!pair) return;
+
+    this.raycaster.setFromCamera(this.mouse, this.camera);
+    const intersects = this.raycaster.intersectObject(this.group, true);
+  
+    if (intersects.length > 0) {
+      const intersectionPoint = intersects[0].point;
+      
+      draggedSphere.position.copy(intersectionPoint);
+      
+      const positions = pair.line.geometry.attributes.position as THREE.BufferAttribute;
+      positions.setXYZ(0, pair.sphere1.position.x, pair.sphere1.position.y, pair.sphere1.position.z);
+      positions.setXYZ(1, pair.sphere2.position.x, pair.sphere2.position.y, pair.sphere2.position.z);
+      positions.needsUpdate = true;
+  
+      this.calculateDistanceForPair(pair);
+      this.updateMeasurementsDisplay();
+    } else {
+      if (this.lastValidPosition) {
+        draggedSphere.position.copy(this.lastValidPosition);
+      }
+      const positions = pair.line.geometry.attributes.position as THREE.BufferAttribute;
+      positions.setXYZ(0, pair.sphere1.position.x, pair.sphere1.position.y, pair.sphere1.position.z);
+      positions.setXYZ(1, pair.sphere2.position.x, pair.sphere2.position.y, pair.sphere2.position.z);
+      positions.needsUpdate = true;
+  
+      this.calculateDistanceForPair(pair);
+      this.updateMeasurementsDisplay();
+    }
+    this.lastValidPosition = null;
   }
 }

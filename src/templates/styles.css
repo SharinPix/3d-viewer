@@ -37,7 +37,6 @@ body {
 }
 
 #loading {
-  display: none;
   justify-content: center;
   align-items: center;
   gap: 10px;
@@ -48,7 +47,6 @@ body {
 }
 
 #loading-model {
-  display: none;
   justify-content: center;
   align-items: center;
   gap: 10px;

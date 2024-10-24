@@ -26,6 +26,7 @@ export class Measurements {
   private lastValidPosition: THREE.Vector3 | null = null;
   private camera: THREE.Camera;
   private onMouseDown: (mouseEvent: MouseEvent) => void;
+  private url: string;
 
   private currentSpheres: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>[] = [];
 
@@ -34,11 +35,13 @@ export class Measurements {
     camera: THREE.Camera,
     renderer: THREE.WebGLRenderer,
     group: THREE.Group,
-    loader: Loader
+    loader: Loader,
+    url: string
   ) {
     this.scene = scene;
     this.group = group;
     this.camera = camera;
+    this.url = url;
 
     this.control = new DragControls([], camera, renderer.domElement);
     
@@ -72,13 +75,13 @@ export class Measurements {
     this.loadSpherePairs();
   }
 
-  public placePoints(camera: THREE.Camera, event: MouseEvent) {
+  public placePoints(event: MouseEvent) {
     if (!this.generatedColor) {
       this.generatedColor = Utils.generateRandomColor();
     }
 
     this.updateMouse(event);
-    this.raycaster.setFromCamera(this.mouse, camera);
+    this.raycaster.setFromCamera(this.mouse, this.camera);
 
     const intersects = this.raycaster.intersectObject(this.group, true);
     if (intersects.length > 0) {
@@ -204,7 +207,7 @@ export class Measurements {
   }
 
   private clearAll() {
-    localStorage.removeItem('spherePairs');
+    localStorage.removeItem(`${this.url}_spherePairs`);
     this.currentSpheres.forEach(sphere => {
       this.scene.remove(sphere);
     });
@@ -243,19 +246,30 @@ export class Measurements {
 
   private onSphereDrag(draggedSphere: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>) {
     const pair = this.spherePairs.find(p => p.sphere1 === draggedSphere || p.sphere2 === draggedSphere);
-    if (pair) {
-      pair.line.geometry.setFromPoints([pair.sphere1.position, pair.sphere2.position]);
-    }
+    if (!pair) return;
+
+    pair.line.geometry.setFromPoints([pair.sphere1.position, pair.sphere2.position]);
+    this.calculateDistanceForPair(pair);
+    this.updateMeasurementsDisplay();
   }
 
-  private onSphereDragEnd(
-    draggedSphere: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>) {
+  private onSphereDragEnd(draggedSphere: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>) {
+    const pair = this.spherePairs.find(p => p.sphere1 === draggedSphere || p.sphere2 === draggedSphere);
+    if (!pair) return;
+
+    this.raycaster.setFromCamera(this.mouse, this.camera);
     const intersects = this.raycaster.intersectObject(this.group, true);
     if (intersects.length > 0) {
-      draggedSphere.position.copy(intersects[0].point);
-    } else if (this.lastValidPosition) {
-      draggedSphere.position.copy(this.lastValidPosition);
+      const intersectionPoint = intersects[0].point;
+      draggedSphere.position.copy(intersectionPoint);
+    } else {
+      if (this.lastValidPosition) {
+        draggedSphere.position.copy(this.lastValidPosition);
+      }
     }
+    pair.line.geometry.setFromPoints([pair.sphere1.position, pair.sphere2.position]);
+    this.calculateDistanceForPair(pair);
+    this.updateMeasurementsDisplay();
     this.lastValidPosition = null;
     this.saveSpherePairs();
   }
@@ -267,16 +281,18 @@ export class Measurements {
       color: pair.color,
       distance: pair.distance
     }));
-    localStorage.setItem('spherePairs', JSON.stringify(dataToSave));
+    localStorage.setItem(`${this.url}_spherePairs`, JSON.stringify(dataToSave));
   }
 
   private loadSpherePairs() {
-    const savedData = localStorage.getItem('spherePairs');
+    const savedData = localStorage.getItem(`${this.url}_spherePairs`);
     if (savedData) {
       const spherePairsData = JSON.parse(savedData);
       spherePairsData.forEach((data: any) => {
         const sphere1 = this.createSphere(new THREE.Vector3(...data.sphere1), data.color);
         const sphere2 = this.createSphere(new THREE.Vector3(...data.sphere2), data.color);
+        this.control.getObjects().push(sphere1);
+        this.control.getObjects().push(sphere2);
         const line = new THREE.Line(
           new THREE.BufferGeometry().setFromPoints([sphere1.position, sphere2.position]),
           new THREE.LineBasicMaterial({ color: data.color })
@@ -287,7 +303,6 @@ export class Measurements {
         this.spherePairs.push(pair);
         this.calculateDistanceForPair(pair);
       });
-
       this.updateMeasurementsDisplay();
     }
   }

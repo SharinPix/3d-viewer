@@ -160,6 +160,7 @@ export class Measurements {
       measurementsTableContainer.style.display = "none";
       this.currentSpheres.forEach(sphere => {
         this.scene.remove(sphere);
+        this.control.getObjects().splice(0, this.control.getObjects().length);
       });
       this.spherePairs = [];
       this.currentSpheres = [];
@@ -208,6 +209,7 @@ export class Measurements {
 
   private clearAll() {
     localStorage.removeItem(`${this.url}_spherePairs`);
+    this.control.getObjects().splice(0, this.control.getObjects().length);
     this.currentSpheres.forEach(sphere => {
       this.scene.remove(sphere);
     });
@@ -215,11 +217,6 @@ export class Measurements {
       this.scene.remove(pair.sphere1);
       this.scene.remove(pair.sphere2);
       this.scene.remove(pair.line);
-      const objects = this.control.getObjects();
-      const index1 = objects.indexOf(pair.sphere1);
-      if (index1 > -1) objects.splice(index1, 1);
-      const index2 = objects.indexOf(pair.sphere2);
-      if (index2 > -1) objects.splice(index2, 1);
     });
     this.spherePairs = [];
     this.currentSpheres = [];

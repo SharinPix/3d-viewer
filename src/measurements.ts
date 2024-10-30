@@ -204,14 +204,12 @@ export class Measurements {
     this.currentSpheres.forEach(sphere => {
       this.scene.remove(sphere);
     })
-    this.spherePairs.forEach(pair => {
-      this.scene.remove(pair.sphere1);
-      this.scene.remove(pair.sphere2);
-      this.scene.remove(pair.line);
+    this.spherePairs.forEach(({ sphere1, sphere2, line }) => {
+      [sphere1, sphere2, line].forEach(object => this.scene.remove(object));
       const objects = this.control.getObjects();
-      const index1 = objects.indexOf(pair.sphere1);
+      const index1 = objects.indexOf(sphere1);
       if (index1 > -1) objects.splice(index1, 1);
-      const index2 = objects.indexOf(pair.sphere2);
+      const index2 = objects.indexOf(sphere2);
       if (index2 > -1) objects.splice(index2, 1);
     });
     this.spherePairs = [];

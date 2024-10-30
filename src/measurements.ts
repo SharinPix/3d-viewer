@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { Utils } from "./utils";
-import { DragControls } from 'three/examples/jsm/controls/DragControls';
 import { Loader } from "./loader";
+import { DragControlHandler } from "./drag-control-handler";
 
 interface SpherePair {
   sphere1: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>;
@@ -20,13 +20,11 @@ export class Measurements {
   private spherePairs: SpherePair[] = [];
   private mouse = new THREE.Vector2();
   private scene: THREE.Scene;
-  private control: DragControls;
+  private dragControlHandler: DragControlHandler;
   private group: THREE.Group;
   private generatedColor: string | undefined = undefined;
-  private lastValidPosition: THREE.Vector3 | null = null;
+  public lastValidPosition: THREE.Vector3 | null = null;
   private camera: THREE.Camera;
-  private onMouseDown: (mouseEvent: MouseEvent) => void;
-
   private currentSpheres: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>[] = [];
 
   constructor(
@@ -40,34 +38,14 @@ export class Measurements {
     this.group = group;
     this.camera = camera;
 
-    this.control = new DragControls([], camera, renderer.domElement);
-    
-    this.onMouseDown = (mouseEvent: MouseEvent) => {
-      this.updateMouse(mouseEvent);
-    };
-
-    this.control.addEventListener('dragstart', (event: any) => {
-      window.addEventListener('mousedown', this.onMouseDown);
-      loader.lockRotationAndClick();
-      this.lastValidPosition = event.object.position.clone();
-    });
-
-    this.control.addEventListener('dragend', (event: any) => {
-      const onMouseUp = (mouseEvent: MouseEvent) => {
-        this.updateMouse(mouseEvent);
-        this.onSphereDragEnd(event.object as THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>, event);
-        window.removeEventListener("mouseup", onMouseUp);
-        window.removeEventListener("mousedown", this.onMouseDown);
-      };
-      window.addEventListener('mouseup', onMouseUp);
-      setTimeout(() => {
-        loader.unlockRotationAndClick();
-      }, 500);
-    });
-
-    this.control.addEventListener('drag', (event: any) => {
-      this.onSphereDrag(event.object as THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>);
-    });
+    this.dragControlHandler = new DragControlHandler(
+      camera,
+      renderer,
+      loader,
+      this.onSphereDrag.bind(this),
+      this.onSphereDragEnd.bind(this),
+      this
+    );
   }
 
   public placePoints(camera: THREE.Camera, event: MouseEvent) {
@@ -84,7 +62,7 @@ export class Measurements {
     }
   }
 
-  private updateMouse(event: MouseEvent) {
+  public updateMouse(event: MouseEvent) {
     this.mouse.set(
       (event.clientX / window.innerWidth) * 2 - 1,
       -(event.clientY / window.innerHeight) * 2 + 1
@@ -93,7 +71,7 @@ export class Measurements {
 
   private addPoint(point: THREE.Vector3, color: string) {
     const sphere = this.createSphere(point, color);
-    this.control.getObjects().push(sphere);
+    this.dragControlHandler.addObjectToControl(sphere);
     this.currentSpheres.push(sphere);
 
     if (this.currentSpheres.length === 2) {
@@ -206,11 +184,7 @@ export class Measurements {
     })
     this.spherePairs.forEach(({ sphere1, sphere2, line }) => {
       [sphere1, sphere2, line].forEach(object => this.scene.remove(object));
-      const objects = this.control.getObjects();
-      const index1 = objects.indexOf(sphere1);
-      if (index1 > -1) objects.splice(index1, 1);
-      const index2 = objects.indexOf(sphere2);
-      if (index2 > -1) objects.splice(index2, 1);
+      this.dragControlHandler.removeObjectFromControl([sphere1, sphere2]);
     });
     this.spherePairs = [];
     this.currentSpheres = [];
@@ -224,11 +198,7 @@ export class Measurements {
       this.scene.remove(pair.line);
       this.scene.remove(pair.sphere1);
       this.scene.remove(pair.sphere2);
-      const objects = this.control.getObjects();
-      const index1 = objects.indexOf(pair.sphere1);
-      if (index1 > -1) objects.splice(index1, 1);
-      const index2 = objects.indexOf(pair.sphere2);
-      if (index2 > -1) objects.splice(index2, 1);
+      this.dragControlHandler.removeObjectFromControl([pair.sphere1, pair.sphere2]);
       this.spherePairs.splice(index, 1);
       this.updateMeasurementsDisplay();
     }
@@ -238,13 +208,7 @@ export class Measurements {
     const pair = this.spherePairs.find(p => p.sphere1 === draggedSphere || p.sphere2 === draggedSphere);
     if (!pair) return;
 
-    const positions = pair.line.geometry.attributes.position as THREE.BufferAttribute;
-    positions.setXYZ(0, pair.sphere1.position.x, pair.sphere1.position.y, pair.sphere1.position.z);
-    positions.setXYZ(1, pair.sphere2.position.x, pair.sphere2.position.y, pair.sphere2.position.z);
-    positions.needsUpdate = true;
-
-    this.calculateDistanceForPair(pair);
-    this.updateMeasurementsDisplay();
+    this.updatePosition(pair);
   }
 
   private onSphereDragEnd(draggedSphere: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>, event: any) {
@@ -253,31 +217,25 @@ export class Measurements {
 
     this.raycaster.setFromCamera(this.mouse, this.camera);
     const intersects = this.raycaster.intersectObject(this.group, true);
-  
     if (intersects.length > 0) {
       const intersectionPoint = intersects[0].point;
-      
       draggedSphere.position.copy(intersectionPoint);
-      
-      const positions = pair.line.geometry.attributes.position as THREE.BufferAttribute;
-      positions.setXYZ(0, pair.sphere1.position.x, pair.sphere1.position.y, pair.sphere1.position.z);
-      positions.setXYZ(1, pair.sphere2.position.x, pair.sphere2.position.y, pair.sphere2.position.z);
-      positions.needsUpdate = true;
-  
-      this.calculateDistanceForPair(pair);
-      this.updateMeasurementsDisplay();
     } else {
       if (this.lastValidPosition) {
         draggedSphere.position.copy(this.lastValidPosition);
       }
-      const positions = pair.line.geometry.attributes.position as THREE.BufferAttribute;
-      positions.setXYZ(0, pair.sphere1.position.x, pair.sphere1.position.y, pair.sphere1.position.z);
-      positions.setXYZ(1, pair.sphere2.position.x, pair.sphere2.position.y, pair.sphere2.position.z);
-      positions.needsUpdate = true;
-  
-      this.calculateDistanceForPair(pair);
-      this.updateMeasurementsDisplay();
     }
+    this.updatePosition(pair);
     this.lastValidPosition = null;
+  }
+
+  private updatePosition(pair: SpherePair) {
+    const positions = pair.line.geometry.attributes.position as THREE.BufferAttribute;
+    positions.setXYZ(0, pair.sphere1.position.x, pair.sphere1.position.y, pair.sphere1.position.z);
+    positions.setXYZ(1, pair.sphere2.position.x, pair.sphere2.position.y, pair.sphere2.position.z);
+    positions.needsUpdate = true;
+
+    this.calculateDistanceForPair(pair);
+    this.updateMeasurementsDisplay();
   }
 }

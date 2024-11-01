@@ -26,17 +26,20 @@ export class Measurements {
   public lastValidPosition: THREE.Vector3 | null = null;
   private camera: THREE.Camera;
   private currentSpheres: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>[] = [];
+  private url: string;
 
   constructor(
     scene: THREE.Scene,
     camera: THREE.Camera,
     renderer: THREE.WebGLRenderer,
     group: THREE.Group,
-    loader: Loader
+    loader: Loader,
+    url: string
   ) {
     this.scene = scene;
     this.group = group;
     this.camera = camera;
+    this.url = url;
 
     this.dragControlHandler = new DragControlHandler(
       camera,
@@ -46,15 +49,17 @@ export class Measurements {
       this.onSphereDragEnd.bind(this),
       this
     );
+
+    this.loadSpherePairs();
   }
 
-  public placePoints(camera: THREE.Camera, event: MouseEvent) {
+  public placePoints(event: MouseEvent) {
     if (!this.generatedColor) {
       this.generatedColor = Utils.generateRandomColor();
     }
 
     this.updateMouse(event);
-    this.raycaster.setFromCamera(this.mouse, camera);
+    this.raycaster.setFromCamera(this.mouse, this.camera);
 
     const intersects = this.raycaster.intersectObject(this.group, true);
     if (intersects.length > 0) {
@@ -90,6 +95,7 @@ export class Measurements {
       this.spherePairs.push(pair);
       this.calculateDistanceForPair(pair);
       this.updateMeasurementsDisplay();
+      this.saveSpherePairs();
       this.currentSpheres = [];
       this.generatedColor = undefined;
     }
@@ -132,6 +138,7 @@ export class Measurements {
       measurementsTableContainer.style.display = "none";
       this.currentSpheres.forEach(sphere => {
         this.scene.remove(sphere);
+        this.dragControlHandler.removeObjectFromControl([sphere]);
       })
       this.spherePairs = [];
       this.currentSpheres = [];
@@ -179,8 +186,10 @@ export class Measurements {
   }
 
   private clearAll() {
+    localStorage.removeItem(`${this.url}_spherePairs`);
     this.currentSpheres.forEach(sphere => {
       this.scene.remove(sphere);
+      this.dragControlHandler.removeObjectFromControl([sphere]);
     })
     this.spherePairs.forEach(({ sphere1, sphere2, line }) => {
       [sphere1, sphere2, line].forEach(object => this.scene.remove(object));
@@ -201,6 +210,7 @@ export class Measurements {
       this.dragControlHandler.removeObjectFromControl([pair.sphere1, pair.sphere2]);
       this.spherePairs.splice(index, 1);
       this.updateMeasurementsDisplay();
+      this.saveSpherePairs();
     }
   }
 
@@ -226,7 +236,40 @@ export class Measurements {
       }
     }
     this.updatePosition(pair);
+    this.saveSpherePairs();
     this.lastValidPosition = null;
+  }
+
+  private saveSpherePairs() {
+    const dataToSave = this.spherePairs.map(pair => ({
+      sphere1: pair.sphere1.position.toArray(),
+      sphere2: pair.sphere2.position.toArray(),
+      color: pair.color,
+      distance: pair.distance
+    }));
+    localStorage.setItem(`${this.url}_spherePairs`, JSON.stringify(dataToSave));
+  }
+
+  private loadSpherePairs() {
+    const savedData = localStorage.getItem(`${this.url}_spherePairs`);
+    if (savedData) {
+      const spherePairsData = JSON.parse(savedData);
+      spherePairsData.forEach((data: any) => {
+        const sphere1 = this.createSphere(new THREE.Vector3(...data.sphere1), data.color);
+        const sphere2 = this.createSphere(new THREE.Vector3(...data.sphere2), data.color);
+        this.dragControlHandler.addObjectToControl(sphere1);
+        this.dragControlHandler.addObjectToControl(sphere2);
+        const line = new THREE.Line(
+          new THREE.BufferGeometry().setFromPoints([sphere1.position, sphere2.position]),
+          new THREE.LineBasicMaterial({ color: data.color })
+        );
+        this.scene.add(line);
+        const pair: SpherePair = { sphere1, sphere2, line, color: data.color, distance: data.distance };
+        this.spherePairs.push(pair);
+        this.calculateDistanceForPair(pair);
+      });
+      this.updateMeasurementsDisplay();
+    }
   }
 
   private updatePosition(pair: SpherePair) {

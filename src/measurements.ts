@@ -184,7 +184,6 @@ export class Measurements {
   }
 
   private clearAll() {
-    localStorage.removeItem(`${this.url}_spherePairs`);
     this.currentSpheres.forEach(sphere => {
       this.scene.remove(sphere);
       this.dragControlHandler.removeObjectFromControl([sphere]);
@@ -195,6 +194,7 @@ export class Measurements {
     });
     this.spherePairs = [];
     this.currentSpheres = [];
+    this.saveSpherePairs();
     this.generatedColor = undefined;
     this.updateMeasurementsDisplay();
   }
@@ -245,30 +245,48 @@ export class Measurements {
       color: pair.color,
       distance: pair.distance
     }));
-    localStorage.setItem(`${this.url}_spherePairs`, JSON.stringify(dataToSave));
+
+    const jsonString = JSON.stringify(dataToSave);
+    const base64Data = btoa(encodeURIComponent(jsonString));
+
+    const hash = window.location.hash;
+    const hashParams = new URLSearchParams(hash.slice(1));
+    hashParams.set("data", base64Data);
+    window.location.hash = `#${hashParams.toString()}`;
   }
 
   private loadSpherePairs() {
-    const savedData = localStorage.getItem(`${this.url}_spherePairs`);
-    if (savedData) {
-      const spherePairsData = JSON.parse(savedData);
-      spherePairsData.forEach((data: any) => {
-        const sphere1 = this.createSphere(new THREE.Vector3(...data.sphere1), data.color);
-        const sphere2 = this.createSphere(new THREE.Vector3(...data.sphere2), data.color);
-        this.dragControlHandler.addObjectToControl(sphere1);
-        this.dragControlHandler.addObjectToControl(sphere2);
-        const line = new THREE.Line(
-          new THREE.BufferGeometry().setFromPoints([sphere1.position, sphere2.position]),
-          new THREE.LineBasicMaterial({ color: data.color })
-        );
-        this.scene.add(line);
-        const pair: SpherePair = { sphere1, sphere2, line, color: data.color, distance: data.distance };
-        this.spherePairs.push(pair);
-        this.calculateDistanceForPair(pair);
-      });
-      this.updateMeasurementsDisplay();
+    const urlParams = new URLSearchParams(window.location.hash);
+    const base64Data = urlParams.get("data");
+
+    if (base64Data) {
+      try {
+        const jsonString = decodeURIComponent(atob(base64Data));
+        const spherePairsData = JSON.parse(jsonString);
+        spherePairsData.forEach((data: any) => {
+          const sphere1 = this.createSphere(new THREE.Vector3(...data.sphere1), data.color);
+          const sphere2 = this.createSphere(new THREE.Vector3(...data.sphere2), data.color);
+          this.dragControlHandler.addObjectToControl(sphere1);
+          this.dragControlHandler.addObjectToControl(sphere2);
+          
+          const line = new THREE.Line(
+              new THREE.BufferGeometry().setFromPoints([sphere1.position, sphere2.position]),
+              new THREE.LineBasicMaterial({ color: data.color })
+          );
+          this.scene.add(line);
+          
+          const pair: SpherePair = { sphere1, sphere2, line, color: data.color, distance: data.distance };
+          this.spherePairs.push(pair);
+          this.calculateDistanceForPair(pair);
+        });
+
+        this.updateMeasurementsDisplay();
+      } catch (error) {
+        console.error("Failed to parse spherePairs data from URL:", error);
+      }
     }
   }
+
 
   private updatePosition(pair: SpherePair) {
     const positions = pair.line.geometry.attributes.position as THREE.BufferAttribute;

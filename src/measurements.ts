@@ -173,11 +173,9 @@ export class Measurements {
   }
 
   private addEventListeners() {
-    const clearButton = document.getElementById("clearButton");
-    clearButton?.addEventListener("click", () => this.clearAll());
+    document.getElementById("clearButton")?.addEventListener("click", () => this.clearAll());
 
-    const unitDropdown = document.getElementById("unit-dropdown") as HTMLSelectElement;
-    unitDropdown?.addEventListener("change", () => this.updateMeasurementsDisplay());
+    document.getElementById("units-dropdown")?.addEventListener("change", () => this.updateMeasurementsDisplay());
 
     document.querySelectorAll(".removeLine").forEach((button) => {
       const index = parseInt((button as HTMLElement).dataset.index!, 10);

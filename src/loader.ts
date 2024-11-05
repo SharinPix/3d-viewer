@@ -56,7 +56,7 @@ export class Loader {
 
     container.appendChild(this.renderer.domElement);
     
-    this.measurement = new Measurements(this.scene, this.camera, this.renderer, this.group, this, url);
+    this.measurement = new Measurements(this.scene, this.camera, this.renderer, this.group, this);
     window.addEventListener("resize", this.onWindowResize.bind(this), false);
     window.addEventListener("beforeunload", this.cleanup.bind(this));
     window.addEventListener("unload", this.cleanup.bind(this));

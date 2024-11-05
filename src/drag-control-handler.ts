@@ -6,6 +6,8 @@ import { Measurements } from "./measurements";
 export class DragControlHandler {
   private control: DragControls;
   private onMouseDown: (mouseEvent: MouseEvent) => void;
+  private onMouseMove: (mouseEvent: MouseEvent) => void;
+  private isMouseMoveListenerActive: boolean = false;
 
   constructor(
     camera: THREE.Camera,
@@ -17,9 +19,10 @@ export class DragControlHandler {
   ) {
     this.control = new DragControls([], camera, renderer.domElement);
     this.onMouseDown = (mouseEvent: MouseEvent) => measurements.updateMouse(mouseEvent);
+    this.onMouseMove = (mouseEvent: MouseEvent) => measurements.updateMouse(mouseEvent);
 
     this.control.addEventListener('dragstart', (event: any) => this.handleDragStart(event, measurements));
-    this.control.addEventListener('drag', (event: any) => this.onDrag(event.object));
+    this.control.addEventListener('drag', (event: any) => this.handleOnDrag(event));
     this.control.addEventListener('dragend', (event: any) => this.handleDragEnd(event, measurements));
   }
 
@@ -28,11 +31,11 @@ export class DragControlHandler {
   }
 
   public removeObjectFromControl(spheres: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>[]) {
-		spheres.forEach((sphere) => {
-			const objects = this.control.getObjects();
-      const index1 = objects.indexOf(sphere);
-      if (index1 > -1) objects.splice(index1, 1);
-		}); 
+    spheres.forEach((sphere) => {
+      const objects = this.control.getObjects();
+      const index = objects.indexOf(sphere);
+      if (index > -1) objects.splice(index, 1);
+    });
   }
 
   private handleDragStart(event: any, measurement: Measurements) {
@@ -48,10 +51,23 @@ export class DragControlHandler {
       this.onDragEnd(event.object, event);
       window.removeEventListener("mouseup", onMouseUp);
       window.removeEventListener("mousedown", this.onMouseDown);
+      
+      if (this.isMouseMoveListenerActive) {
+        window.removeEventListener('mousemove', this.onMouseMove);
+        this.isMouseMoveListenerActive = false;
+      }
     };
     window.addEventListener('mouseup', onMouseUp);
     setTimeout(() => {
       this.loader.unlockRotationAndClick();
     }, 500);
+  }
+
+  private handleOnDrag(event: any) {
+    if (!this.isMouseMoveListenerActive) {
+      window.addEventListener('mousemove', this.onMouseMove);
+      this.isMouseMoveListenerActive = true;
+    }
+    this.onDrag(event.object);
   }
 }

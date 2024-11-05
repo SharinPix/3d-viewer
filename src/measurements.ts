@@ -26,7 +26,7 @@ export class Measurements {
   public lastValidPosition: THREE.Vector3 | null = null;
   private camera: THREE.Camera;
   private currentSpheres: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>[] = [];
-  private url: string;
+  private listenersAdded: boolean = false;
 
   constructor(
     scene: THREE.Scene,
@@ -34,12 +34,10 @@ export class Measurements {
     renderer: THREE.WebGLRenderer,
     group: THREE.Group,
     loader: Loader,
-    url: string
   ) {
     this.scene = scene;
     this.group = group;
     this.camera = camera;
-    this.url = url;
 
     this.dragControlHandler = new DragControlHandler(
       camera,
@@ -169,14 +167,21 @@ export class Measurements {
     }).join("");
 
     measurementsContainer.innerHTML = rows;
-    this.addEventListeners();
+    
+    this.addEventListenersOnRemoveLineButton();
+    if (!this.listenersAdded) {
+      this.addEventListeners();
+      this.listenersAdded = true;
+    }
   }
 
   private addEventListeners() {
     document.getElementById("clearButton")?.addEventListener("click", () => this.clearAll());
 
     document.getElementById("units-dropdown")?.addEventListener("change", () => this.updateMeasurementsDisplay());
+  }
 
+  private addEventListenersOnRemoveLineButton() {
     document.querySelectorAll(".removeLine").forEach((button) => {
       const index = parseInt((button as HTMLElement).dataset.index!, 10);
       button.addEventListener("click", () => this.removeLine(index));
@@ -216,6 +221,15 @@ export class Measurements {
     const pair = this.spherePairs.find(p => p.sphere1 === draggedSphere || p.sphere2 === draggedSphere);
     if (!pair) return;
 
+    this.raycaster.setFromCamera(this.mouse, this.camera);
+    const intersects = this.raycaster.intersectObject(this.group, true);
+    if (intersects.length > 0) {
+      this.lastValidPosition = intersects[0].point;
+      draggedSphere.position.copy(this.lastValidPosition);
+    } else if (this.lastValidPosition) {
+      draggedSphere.position.copy(this.lastValidPosition);
+    }
+
     this.updatePosition(pair);
   }
 
@@ -226,12 +240,9 @@ export class Measurements {
     this.raycaster.setFromCamera(this.mouse, this.camera);
     const intersects = this.raycaster.intersectObject(this.group, true);
     if (intersects.length > 0) {
-      const intersectionPoint = intersects[0].point;
-      draggedSphere.position.copy(intersectionPoint);
-    } else {
-      if (this.lastValidPosition) {
-        draggedSphere.position.copy(this.lastValidPosition);
-      }
+      draggedSphere.position.copy(intersects[0].point);
+    } else if (this.lastValidPosition) {
+      draggedSphere.position.copy(this.lastValidPosition);
     }
     this.updatePosition(pair);
     this.saveSpherePairs();

@@ -21,9 +21,9 @@ export class DragControlHandler {
     this.onMouseDown = (mouseEvent: MouseEvent) => measurements.updateMouse(mouseEvent);
     this.onMouseMove = (mouseEvent: MouseEvent) => measurements.updateMouse(mouseEvent);
 
-    this.control.addEventListener('dragstart', (event: any) => this.handleDragStart(event, measurements));
-    this.control.addEventListener('drag', (event: any) => this.handleOnDrag(event));
-    this.control.addEventListener('dragend', (event: any) => this.handleDragEnd(event, measurements));
+    this.control.addEventListener('dragstart', (event: THREE.Event) => this.handleDragStart(event, measurements));
+    this.control.addEventListener('drag', (event: THREE.Event) => this.handleOnDrag(event));
+    this.control.addEventListener('dragend', (event: THREE.Event) => this.handleDragEnd(event, measurements));
   }
 
   public addObjectToControl(object: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>) {
@@ -38,14 +38,14 @@ export class DragControlHandler {
     });
   }
 
-  private handleDragStart(event: any, measurement: Measurements) {
+  private handleDragStart(event: THREE.Event, measurement: Measurements) {
     window.addEventListener('mousedown', this.onMouseDown);
     this.loader.lockRotationAndClick();
 		
-    measurement.lastValidPosition = event.object.position.clone();
+    measurement.lastIntersectedPosition = event.object.position.clone();
   }
 
-  private handleDragEnd(event: any, measurement: Measurements) {
+  private handleDragEnd(event: THREE.Event, measurement: Measurements) {
     const onMouseUp = (mouseEvent: MouseEvent) => {
       measurement.updateMouse(mouseEvent);
       this.onDragEnd(event.object, event);
@@ -63,7 +63,7 @@ export class DragControlHandler {
     }, 500);
   }
 
-  private handleOnDrag(event: any) {
+  private handleOnDrag(event: THREE.Event) {
     if (!this.isMouseMoveListenerActive) {
       window.addEventListener('mousemove', this.onMouseMove);
       this.isMouseMoveListenerActive = true;

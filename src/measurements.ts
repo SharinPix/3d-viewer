@@ -23,10 +23,10 @@ export class Measurements {
   private dragControlHandler: DragControlHandler;
   private group: THREE.Group;
   private generatedColor: string | undefined = undefined;
-  public lastValidPosition: THREE.Vector3 | null = null;
+  public lastIntersectedPosition: THREE.Vector3 | null = null;
   private camera: THREE.Camera;
   private currentSpheres: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>[] = [];
-  private listenersAdded: boolean = false;
+  private eventListenersInitialised: boolean = false;
 
   constructor(
     scene: THREE.Scene,
@@ -169,9 +169,9 @@ export class Measurements {
     measurementsContainer.innerHTML = rows;
     
     this.addEventListenersOnRemoveLineButton();
-    if (!this.listenersAdded) {
+    if (!this.eventListenersInitialised) {
       this.addEventListeners();
-      this.listenersAdded = true;
+      this.eventListenersInitialised = true;
     }
   }
 
@@ -224,16 +224,16 @@ export class Measurements {
     this.raycaster.setFromCamera(this.mouse, this.camera);
     const intersects = this.raycaster.intersectObject(this.group, true);
     if (intersects.length > 0) {
-      this.lastValidPosition = intersects[0].point;
-      draggedSphere.position.copy(this.lastValidPosition);
-    } else if (this.lastValidPosition) {
-      draggedSphere.position.copy(this.lastValidPosition);
+      this.lastIntersectedPosition = intersects[0].point;
+      draggedSphere.position.copy(this.lastIntersectedPosition);
+    } else if (this.lastIntersectedPosition) {
+      draggedSphere.position.copy(this.lastIntersectedPosition);
     }
 
     this.updatePosition(pair);
   }
 
-  private onSphereDragEnd(draggedSphere: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>, event: any) {
+  private onSphereDragEnd(draggedSphere: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>) {
     const pair = this.spherePairs.find(p => p.sphere1 === draggedSphere || p.sphere2 === draggedSphere);
     if (!pair) return;
 
@@ -241,12 +241,12 @@ export class Measurements {
     const intersects = this.raycaster.intersectObject(this.group, true);
     if (intersects.length > 0) {
       draggedSphere.position.copy(intersects[0].point);
-    } else if (this.lastValidPosition) {
-      draggedSphere.position.copy(this.lastValidPosition);
+    } else if (this.lastIntersectedPosition) {
+      draggedSphere.position.copy(this.lastIntersectedPosition);
     }
     this.updatePosition(pair);
     this.saveSpherePairs();
-    this.lastValidPosition = null;
+    this.lastIntersectedPosition = null;
   }
 
   private saveSpherePairs() {

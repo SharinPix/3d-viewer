@@ -12,6 +12,8 @@ export class Loader {
   private scene: THREE.Scene;
   private group: THREE.Group;
   private measurement: Measurements;
+  private isRotationLocked: boolean = false;
+  private mouseMoved: boolean = true;
 
   constructor(container: HTMLElement, url: string) {
     this.addLoading();
@@ -54,11 +56,45 @@ export class Loader {
 
     container.appendChild(this.renderer.domElement);
     
-    this.measurement = new Measurements(this.scene);
+    this.measurement = new Measurements(this.scene, this.camera, this.renderer, this.group, this);
     window.addEventListener("resize", this.onWindowResize.bind(this), false);
     window.addEventListener("beforeunload", this.cleanup.bind(this));
     window.addEventListener("unload", this.cleanup.bind(this));
-    container.addEventListener("click", this.onMouseClick.bind(this), false);
+    container.addEventListener("mousedown", this.onMouseDown.bind(this), false);
+    container.addEventListener("mousemove", this.onMouseMove.bind(this), false);
+    container.addEventListener("mouseup", this.onMouseUp.bind(this), false);
+  }
+
+  onMouseDown(event: MouseEvent) {
+    this.mouseMoved = false;
+  }
+
+  onMouseMove(event: MouseEvent) {
+    if ((Math.abs(event.movementX) > 0.1 || Math.abs(event.movementY) > 0.1) && !this.mouseMoved) {
+      this.mouseMoved = true;
+    }
+  }
+
+  onMouseUp(event: MouseEvent) {
+    if (!this.mouseMoved && !this.isRotationLocked) {
+      this.onMouseClick(event);
+    }
+  }
+
+  lockRotationAndClick() {
+    this.controls.enableRotate = false;
+    this.isRotationLocked = true;
+    if (this.isRotationLocked) {
+      document.removeEventListener("click", this.onMouseClick.bind(this), false);
+    }
+  }
+
+  unlockRotationAndClick() {
+    this.controls.enableRotate = true;
+    this.isRotationLocked = false;
+    if (this.isRotationLocked) {
+      document.addEventListener("click", this.onMouseClick.bind(this), false);
+    }
   }
 
   setSceneAttributes() {
@@ -146,7 +182,9 @@ export class Loader {
   }
 
   onMouseClick(event: MouseEvent) {
-    this.measurement.placePoints(this.group, this.camera, event);
+    if (!this.isRotationLocked) {
+      this.measurement.placePoints(event);
+    }
   }
 
   onWindowResize() {

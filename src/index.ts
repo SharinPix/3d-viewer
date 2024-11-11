@@ -3,8 +3,7 @@ import "./templates/styles.css";
 import { Utils } from "./utils";
 
 function getUrlParameter(name: string): string | null {
-  const urlParams = new URLSearchParams(window.location.search);
-  return urlParams.get(name);
+  return new URLSearchParams(window.location.hash.slice(1)).get(name);
 }
 
 const url = getUrlParameter("file");
